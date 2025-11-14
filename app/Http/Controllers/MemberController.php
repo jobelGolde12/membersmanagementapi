@@ -7,6 +7,7 @@ use App\Models\Member;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class MemberController extends Controller
@@ -273,9 +274,8 @@ class MemberController extends Controller
     public function male(): JsonResponse
     {
         try {
-            // Assuming you have a 'gender' field in your members table
-            // If not, you'll need to add it to your migration
-            $maleMembers = Member::where('gender', 'male')->get();
+
+            $maleMembers = Member::where('gender', 'Male')->get();
 
             return response()->json([
                 'status' => 'success',
@@ -298,7 +298,6 @@ class MemberController extends Controller
     public function female(): JsonResponse
     {
         try {
-            // Assuming you have a 'gender' field in your members table
             $femaleMembers = Member::where('gender', 'female')->get();
 
             return response()->json([
@@ -391,14 +390,8 @@ class MemberController extends Controller
             $seniorMembers = Member::where('age', '>=', 60)->count();
             $minorMembers = Member::where('age', '<', 18)->count();
             
-            // If you have gender field
-            $maleMembers = Member::where('gender', 'male')->count();
-            $femaleMembers = Member::where('gender', 'female')->count();
-
-            $purokDistribution = Member::select('purok')
-                ->selectRaw('COUNT(*) as count')
-                ->groupBy('purok')
-                ->get();
+            $maleMembers = Member::where('gender', 'Male')->count();
+            $femaleMembers = Member::where('gender', 'Female')->count();
 
             return response()->json([
                 'status' => 'success',
@@ -411,7 +404,6 @@ class MemberController extends Controller
                     'minor_members' => $minorMembers,
                     'male_members' => $maleMembers,
                     'female_members' => $femaleMembers,
-                    'purok_distribution' => $purokDistribution
                 ]
             ], 200);
         } catch (\Exception $e) {
@@ -426,34 +418,32 @@ class MemberController extends Controller
     /**
      * Get age distribution
      */
-    public function ageDistribution(): JsonResponse
-    {
-        try {
-            $ageGroups = [
-                '0-17' => Member::where('age', '<', 18)->count(),
-                '18-25' => Member::whereBetween('age', [18, 25])->count(),
-                '26-35' => Member::whereBetween('age', [26, 35])->count(),
-                '36-45' => Member::whereBetween('age', [36, 45])->count(),
-                '46-59' => Member::whereBetween('age', [46, 59])->count(),
-                '60+' => Member::where('age', '>=', 60)->count(),
-            ];
+   public function ageDistribution(): JsonResponse
+{
+    try {
+        $ageGroups = [
+            '0-17' => Member::where('age', '<', 18)->count(),
+            '18-25' => Member::whereBetween('age', [18, 25])->count(),
+            '26-35' => Member::whereBetween('age', [26, 35])->count(),
+            '36-45' => Member::whereBetween('age', [36, 45])->count(),
+            '46-59' => Member::whereBetween('age', [46, 59])->count(),
+            '60+' => Member::where('age', '>=', 60)->count(),
+        ];
 
-            $averageAge = Member::avg('age');
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Age distribution retrieved successfully',
-                'data' => [
-                    'age_groups' => $ageGroups,
-                    'average_age' => round($averageAge, 2)
-                ]
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to retrieve age distribution',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Age distribution retrieved successfully',
+            'data' => [
+                'age_groups' => $ageGroups
+            ]
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to retrieve age distribution',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 }

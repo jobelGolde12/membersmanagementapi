@@ -9,12 +9,11 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::prefix('members')->group(function () {
-    Route::get('/', [MemberController::class, 'index']);
-    Route::get('/{id}', [MemberController::class, 'show']);
-    Route::post('/', [MemberController::class, 'store']);
-    Route::put('/{id}', [MemberController::class, 'update']);
-    Route::delete('/{id}', [MemberController::class, 'destroy']);
+        // Analytics
+    Route::get('/statistics', [MemberController::class, 'statistics']);
+    Route::get('/age-distribution', [MemberController::class, 'ageDistribution']);
 
+    
     // Filter routes
     Route::get('/seniors', [MemberController::class, 'seniors']);
     Route::get('/minors', [MemberController::class, 'minors']);
@@ -24,8 +23,11 @@ Route::prefix('members')->group(function () {
     Route::get('/female', [MemberController::class, 'female']);
     Route::get('/purok/{purok}', [MemberController::class, 'purok']);
     Route::get('/search', [MemberController::class, 'search']);
+    
+    Route::get('/', [MemberController::class, 'index']);
+    Route::get('/{id}', [MemberController::class, 'show']);
+    Route::post('/', [MemberController::class, 'store']);
+    Route::put('/{id}', [MemberController::class, 'update']);
+    Route::delete('/{id}', [MemberController::class, 'destroy']);
 
-    // Analytics
-    Route::get('/statistics', [MemberController::class, 'statistics']);
-    Route::get('/age-distribution', [MemberController::class, 'ageDistribution']);
 });
