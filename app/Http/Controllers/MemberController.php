@@ -6,27 +6,106 @@ use App\Http\Controllers\Controller;
 use App\Models\Member;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class MemberController extends Controller
 {
-      /**
+    /* ============================================================
+       FORMAT IF EITHER JSON OR XML
+    ============================================================ */
+    private function isJsonOrXml($data, $status = 200)
+    {
+        $acceptHeader = strtolower(request()->header('Accept', ''));
+        $formatParam = strtolower(request()->get('format', ''));
+
+        // ALWAYS honor ?format=xml first
+        if ($formatParam === 'xml') {
+            return $this->convertToXml($data, $status);
+        }
+
+        if ($formatParam === 'json') {
+            return response()->json($data, $status);
+        }
+
+        // Next, check Accept headers
+        if (str_contains($acceptHeader, 'application/xml') ||
+            str_contains($acceptHeader, 'text/xml') ||
+            str_contains($acceptHeader, 'xml')) {
+            return $this->convertToXml($data, $status);
+        }
+
+        if (str_contains($acceptHeader, 'application/json') ||
+            str_contains($acceptHeader, 'json')) {
+            return response()->json($data, $status);
+        }
+
+        // Default to JSON
+        return response()->json($data, $status);
+    }
+
+    private function convertToXml($data, $status = 200)
+    {
+        $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><response/>');
+
+        $this->arrayToXml($data, $xml);
+
+        return response($xml->asXML(), $status)
+            ->header('Content-Type', 'application/xml');
+    }
+
+    private function arrayToXml($data, &$xml)
+    {
+        foreach ($data as $key => $value) {
+            // Numeric keys → use a generic tag name
+            if (is_numeric($key)) {
+                $key = "item_" . $key;
+            }
+
+            if (is_array($value)) {
+                $subnode = $xml->addChild($key);
+                $this->arrayToXml($value, $subnode);
+            } elseif (is_object($value)) {
+                $subnode = $xml->addChild($key);
+                $this->arrayToXml((array)$value, $subnode);
+            } else {
+                $xml->addChild($key, htmlspecialchars($value));
+            }
+        }
+    }
+
+    private function sanitizeXmlKey($key)
+    {
+        if (empty($key)) return 'item';
+
+        $key = preg_replace('/[^a-zA-Z0-9_]/', '_', $key);
+
+        if (empty($key) || is_numeric(substr($key, 0, 1))) {
+            $key = 'item_' . $key;
+        }
+
+        return $key;
+    }
+
+    /* ============================================================
+       MEMBER FUNCTIONS
+    ============================================================ */
+
+    /**
      * Display a listing of all members.
      */
-    public function index(): JsonResponse
+    public function index()
     {
         try {
             $members = Member::all();
             
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Members retrieved successfully',
                 'data' => $members
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve members',
                 'error' => $e->getMessage()
@@ -37,18 +116,18 @@ class MemberController extends Controller
     /**
      * Display the specified member.
      */
-    public function show($id): JsonResponse
+    public function show($id)
     {
         try {
             $member = Member::findOrFail($id);
             
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Member retrieved successfully',
                 'data' => $member
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Member not found',
                 'error' => $e->getMessage()
@@ -59,7 +138,7 @@ class MemberController extends Controller
     /**
      * Store a newly created member.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -76,7 +155,7 @@ class MemberController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
+                return $this->isJsonOrXml([
                     'status' => 'error',
                     'message' => 'Validation failed',
                     'errors' => $validator->errors()
@@ -88,13 +167,13 @@ class MemberController extends Controller
 
             $member = Member::create(array_merge($request->all(), ['age' => $age]));
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Member created successfully',
                 'data' => $member
             ], 201);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to create member',
                 'error' => $e->getMessage()
@@ -105,7 +184,7 @@ class MemberController extends Controller
     /**
      * Update the specified member.
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(Request $request, $id)
     {
         try {
             $member = Member::findOrFail($id);
@@ -124,7 +203,7 @@ class MemberController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
+                return $this->isJsonOrXml([
                     'status' => 'error',
                     'message' => 'Validation failed',
                     'errors' => $validator->errors()
@@ -139,13 +218,13 @@ class MemberController extends Controller
 
             $member->update($request->all());
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Member updated successfully',
                 'data' => $member
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to update member',
                 'error' => $e->getMessage()
@@ -156,19 +235,19 @@ class MemberController extends Controller
     /**
      * Remove the specified member.
      */
-    public function destroy($id): JsonResponse
+    public function destroy($id)
     {
         try {
             $member = Member::findOrFail($id);
             $member->delete();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Member deleted successfully',
                 'data' => null
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to delete member',
                 'error' => $e->getMessage()
@@ -179,19 +258,19 @@ class MemberController extends Controller
     /**
      * Get senior members (age 60 and above)
      */
-    public function seniors(): JsonResponse
+    public function seniors()
     {
         try {
             $seniors = Member::where('age', '>=', 60)->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Senior members retrieved successfully',
                 'data' => $seniors,
                 'count' => $seniors->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve senior members',
                 'error' => $e->getMessage()
@@ -202,19 +281,19 @@ class MemberController extends Controller
     /**
      * Get minor members (age below 18)
      */
-    public function minors(): JsonResponse
+    public function minors()
     {
         try {
             $minors = Member::where('age', '<', 18)->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Minor members retrieved successfully',
                 'data' => $minors,
                 'count' => $minors->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve minor members',
                 'error' => $e->getMessage()
@@ -225,19 +304,19 @@ class MemberController extends Controller
     /**
      * Get active members
      */
-    public function active(): JsonResponse
+    public function active()
     {
         try {
             $activeMembers = Member::where('status', 'active')->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Active members retrieved successfully',
                 'data' => $activeMembers,
                 'count' => $activeMembers->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve active members',
                 'error' => $e->getMessage()
@@ -248,19 +327,19 @@ class MemberController extends Controller
     /**
      * Get inactive members
      */
-    public function inactive(): JsonResponse
+    public function inactive()
     {
         try {
             $inactiveMembers = Member::where('status', 'inactive')->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Inactive members retrieved successfully',
                 'data' => $inactiveMembers,
                 'count' => $inactiveMembers->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve inactive members',
                 'error' => $e->getMessage()
@@ -271,20 +350,19 @@ class MemberController extends Controller
     /**
      * Get male members
      */
-    public function male(): JsonResponse
+    public function male()
     {
         try {
-
             $maleMembers = Member::where('gender', 'Male')->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Male members retrieved successfully',
                 'data' => $maleMembers,
                 'count' => $maleMembers->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve male members',
                 'error' => $e->getMessage()
@@ -295,19 +373,19 @@ class MemberController extends Controller
     /**
      * Get female members
      */
-    public function female(): JsonResponse
+    public function female()
     {
         try {
             $femaleMembers = Member::where('gender', 'female')->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Female members retrieved successfully',
                 'data' => $femaleMembers,
                 'count' => $femaleMembers->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve female members',
                 'error' => $e->getMessage()
@@ -318,19 +396,19 @@ class MemberController extends Controller
     /**
      * Get members by purok
      */
-    public function purok($purok): JsonResponse
+    public function purok($purok)
     {
         try {
             $members = Member::where('purok', $purok)->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => "Members from purok $purok retrieved successfully",
                 'data' => $members,
                 'count' => $members->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve members by purok',
                 'error' => $e->getMessage()
@@ -341,7 +419,7 @@ class MemberController extends Controller
     /**
      * Search members by name
      */
-    public function search(Request $request): JsonResponse
+    public function search(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -349,7 +427,7 @@ class MemberController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
+                return $this->isJsonOrXml([
                     'status' => 'error',
                     'message' => 'Validation failed',
                     'errors' => $validator->errors()
@@ -363,14 +441,14 @@ class MemberController extends Controller
                 ->orWhere('middle_name', 'LIKE', "%{$query}%")
                 ->get();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Search results retrieved successfully',
                 'data' => $members,
                 'count' => $members->count()
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Search failed',
                 'error' => $e->getMessage()
@@ -381,7 +459,7 @@ class MemberController extends Controller
     /**
      * Get member statistics
      */
-    public function statistics(): JsonResponse
+    public function statistics()
     {
         try {
             $totalMembers = Member::count();
@@ -393,7 +471,7 @@ class MemberController extends Controller
             $maleMembers = Member::where('gender', 'Male')->count();
             $femaleMembers = Member::where('gender', 'Female')->count();
 
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Statistics retrieved successfully',
                 'data' => [
@@ -407,7 +485,7 @@ class MemberController extends Controller
                 ]
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->isJsonOrXml([
                 'status' => 'error',
                 'message' => 'Failed to retrieve statistics',
                 'error' => $e->getMessage()
@@ -418,32 +496,31 @@ class MemberController extends Controller
     /**
      * Get age distribution
      */
-   public function ageDistribution(): JsonResponse
-{
-    try {
-        $ageGroups = [
-            '0-17' => Member::where('age', '<', 18)->count(),
-            '18-25' => Member::whereBetween('age', [18, 25])->count(),
-            '26-35' => Member::whereBetween('age', [26, 35])->count(),
-            '36-45' => Member::whereBetween('age', [36, 45])->count(),
-            '46-59' => Member::whereBetween('age', [46, 59])->count(),
-            '60+' => Member::where('age', '>=', 60)->count(),
-        ];
+    public function ageDistribution()
+    {
+        try {
+            $ageGroups = [
+                '0-17' => Member::where('age', '<', 18)->count(),
+                '18-25' => Member::whereBetween('age', [18, 25])->count(),
+                '26-35' => Member::whereBetween('age', [26, 35])->count(),
+                '36-45' => Member::whereBetween('age', [36, 45])->count(),
+                '46-59' => Member::whereBetween('age', [46, 59])->count(),
+                '60+' => Member::where('age', '>=', 60)->count(),
+            ];
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Age distribution retrieved successfully',
-            'data' => [
-                'age_groups' => $ageGroups
-            ]
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Failed to retrieve age distribution',
-            'error' => $e->getMessage()
-        ], 500);
+            return $this->isJsonOrXml([
+                'status' => 'success',
+                'message' => 'Age distribution retrieved successfully',
+                'data' => [
+                    'age_groups' => $ageGroups
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->isJsonOrXml([
+                'status' => 'error',
+                'message' => 'Failed to retrieve age distribution',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
-
 }
