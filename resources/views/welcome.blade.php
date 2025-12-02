@@ -741,7 +741,7 @@
         <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
         
         <script>
-            const baseURL = 'http://127.0.0.1:8000';
+            const baseURL = 'http://membersmanagementapi-production.up.railway.app/api/';
             let currentRequest = null;
 
             function testEndpoint(method, endpoint, data = null) {
