@@ -102,7 +102,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Members retrieved successfully',
-                'data' => $members
+                'data' => $members->toArray()
             ], 200);
         } catch (\Exception $e) {
             return $this->isJsonOrXml([
@@ -124,7 +124,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Member retrieved successfully',
-                'data' => $member
+                'data' => $member->toArray()
             ], 200);
         } catch (\Exception $e) {
             return $this->isJsonOrXml([
@@ -170,7 +170,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Member created successfully',
-                'data' => $member
+                'data' => $member->toArray()
             ], 201);
         } catch (\Exception $e) {
             return $this->isJsonOrXml([
@@ -221,7 +221,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Member updated successfully',
-                'data' => $member
+                'data' => $member->toArray()
             ], 200);
         } catch (\Exception $e) {
             return $this->isJsonOrXml([
@@ -266,7 +266,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Senior members retrieved successfully',
-                'data' => $seniors,
+                'data' => $seniors->toArray(),
                 'count' => $seniors->count()
             ], 200);
         } catch (\Exception $e) {
@@ -289,7 +289,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Minor members retrieved successfully',
-                'data' => $minors,
+                'data' => $minors->toArray(),
                 'count' => $minors->count()
             ], 200);
         } catch (\Exception $e) {
@@ -312,7 +312,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Active members retrieved successfully',
-                'data' => $activeMembers,
+                'data' => $activeMembers->toArray(),
                 'count' => $activeMembers->count()
             ], 200);
         } catch (\Exception $e) {
@@ -335,7 +335,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Inactive members retrieved successfully',
-                'data' => $inactiveMembers,
+                'data' => $inactiveMembers->toArray(),
                 'count' => $inactiveMembers->count()
             ], 200);
         } catch (\Exception $e) {
@@ -358,7 +358,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Male members retrieved successfully',
-                'data' => $maleMembers,
+                'data' => $maleMembers->toArray(),
                 'count' => $maleMembers->count()
             ], 200);
         } catch (\Exception $e) {
@@ -381,7 +381,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Female members retrieved successfully',
-                'data' => $femaleMembers,
+                'data' => $femaleMembers->toArray(),
                 'count' => $femaleMembers->count()
             ], 200);
         } catch (\Exception $e) {
@@ -404,7 +404,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => "Members from purok $purok retrieved successfully",
-                'data' => $members,
+                'data' => $members->toArray(),
                 'count' => $members->count()
             ], 200);
         } catch (\Exception $e) {
@@ -444,7 +444,7 @@ class MemberController extends Controller
             return $this->isJsonOrXml([
                 'status' => 'success',
                 'message' => 'Search results retrieved successfully',
-                'data' => $members,
+                'data' => $members->toArray(),
                 'count' => $members->count()
             ], 200);
         } catch (\Exception $e) {
