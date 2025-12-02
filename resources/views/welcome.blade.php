@@ -11,7 +11,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         
         <!-- Styles -->
-        @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @if (false)
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @else
             <style>
@@ -482,7 +482,7 @@
                 <h2 class="mb-2">Base URL</h2>
                 <div class="bg-surface rounded-md p-3">
                     <code class="text-lg font-mono text-primary">
-                        http://127.0.0.1:8000/api/members
+                        https://membersmanagementapi-production.up.railway.app/api/members
                     </code>
                 </div>
             </div>
